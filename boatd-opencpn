@@ -84,19 +84,18 @@ def main(ip, port, delay):
             boat.update()
 
             location = boat.position
-            message = gll(location.lat,
-                          location.long,
-                          datetime.datetime.now())
-            send_nmea_message(sock, message, (ip, port))
 
-            message = hdm(float(boat.heading))
-            send_nmea_message(sock, message, (ip, port))
+            messages = [
+                gll(location.lat,
+                    location.long,
+                    datetime.datetime.now()),
+                hdm(float(boat.heading)),
+                mwv(float(boat.wind.absolute), reference='T', wind_speed=1),
+                mwv(float(boat.wind.apparent), reference='R', wind_speed=1),
+            ]
 
-            message = mwv(float(boat.wind.absolute), reference='T', wind_speed=1)
-            send_nmea_message(sock, message, (ip, port))
-
-            message = mwv(float(boat.wind.apparent), reference='R', wind_speed=1)
-            send_nmea_message(sock, message, (ip, port))
+            for m in messages:
+                send_nmea_message(sock, m, (ip, port))
 
             time.sleep(delay)
         except KeyboardInterrupt:
