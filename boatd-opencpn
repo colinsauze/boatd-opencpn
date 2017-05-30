@@ -52,6 +52,16 @@ def gll(latitude, longitude, utc_datetime):
     return nmea_line(line)
 
 
+def mwv(wind_angle, wind_speed, wind_speed_units='M', reference='T'):
+    line = 'MWV,{0:.3g},{reference},{speed},{speed_units},A'.format(
+        wind_angle,
+        reference=reference,
+        speed=wind_speed,
+        speed_units=wind_speed_units,
+    )
+    return nmea_line(line)
+
+
 def send_nmea_message(sock, message, dest):
     message = message + u"\r\n"
     sock.sendto(message.encode("utf-8"), dest)
@@ -74,6 +84,10 @@ def main(ip, port, delay):
             send_nmea_message(sock, message, (ip, port))
 
             message = hdm(float(boat.heading))
+            send_nmea_message(sock, message, (ip, port))
+
+            print(boat.wind.absolute)
+            message = mwv(float(boat.wind.absolute), wind_speed=1)
             send_nmea_message(sock, message, (ip, port))
 
             time.sleep(delay)
