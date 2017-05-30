@@ -68,6 +68,11 @@ def mwv(wind_angle, wind_speed, wind_speed_units='M', reference='T'):
     return nmea_line(line)
 
 
+def rsa(rudder_angle):
+    line = 'RSA,{0:.3g},A,0.0,X'.format(rudder_angle)
+    return nmea_line(line)
+
+
 def send_nmea_message(sock, message, dest):
     message = message + u"\r\n"
     sock.sendto(message.encode("utf-8"), dest)
@@ -92,6 +97,7 @@ def main(ip, port, delay):
                 hdm(float(boat.heading)),
                 mwv(float(boat.wind.absolute), reference='T', wind_speed=1),
                 mwv(float(boat.wind.apparent), reference='R', wind_speed=1),
+                rsa(float(boat.target_rudder_angle)),
             ]
 
             for m in messages:
