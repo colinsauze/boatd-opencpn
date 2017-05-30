@@ -6,7 +6,7 @@ import socket
 import sys
 import time
 
-import sailsd
+import boatdclient
 
 
 def calculate_checksum(line):
@@ -61,18 +61,19 @@ def main(ip, port, delay):
     sock = socket.socket(socket.AF_INET,
                          socket.SOCK_DGRAM)
 
-    boat = sailsd.Boat()
+    boat = boatdclient.Boat(auto_update=False)
 
     while True :
         try:
             boat.update()
 
-            message = gll(boat.latitude,
-                          boat.longitude,
+            location = boat.position
+            message = gll(location.lat,
+                          location.long,
                           datetime.datetime.now())
             send_nmea_message(sock, message, (ip, port))
 
-            message = hdm(boat.heading * 180/math.pi)
+            message = hdm(float(boat.heading))
             send_nmea_message(sock, message, (ip, port))
 
             time.sleep(delay)
