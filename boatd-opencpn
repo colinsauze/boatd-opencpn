@@ -82,12 +82,14 @@ def send_nmea_message(sock, message, dest):
 def main(ip, port, delay):
     parser = argparse.ArgumentParser()
     parser.add_argument("endpoint", help="boatd API endpoint")
-    endpoint = split_endpoint(parser.parse_args().endpoint)
+    host, port = parser.parse_args().endpoint.split(':')
+
+    boatd = boatdclient.Boatd(host, port)
 
     sock = socket.socket(socket.AF_INET,
                          socket.SOCK_DGRAM)
 
-    boat = boatdclient.Boat(auto_update=False)
+    boat = boatdclient.Boat(boatd=boatd, auto_update=False)
 
     while True :
         try:
