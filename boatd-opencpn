@@ -109,7 +109,7 @@ def main(bind_ip, bind_port, boatd_host, boatd_port, delay):
             location = boat.position
 
             messages = [
-                gll(location.lat,
+                gga(location.lat,
                     location.long,
                     datetime.datetime.now()),
                 hdm(float(boat.heading)),
