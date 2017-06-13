@@ -35,6 +35,22 @@ def hdm(heading):
     line = 'GPHDM,{0:.3g},M'.format(heading)
     return nmea_line(line)
 
+def gga(latitude, longitude, utc_datetime):
+    '''
+    return a GGA message using lat, long and utc time, as wel as dummy datat
+    '''
+    centisecond = str(utc_datetime.microsecond)[:2]
+    t = utc_datetime.strftime('%H%M%S.') + centisecond
+    lat_direction = 'N' if latitude > 0 else 'S'  # noqa
+    lon_direction = 'E' if longitude > 0 else 'W'  # noqa
+    line = 'GPGGA,{time},{lat},{lat_dir},{lon},{lon_dir},1,12,.5,0,M,0,M,,'.format(
+        lat=degrees_to_nmea(abs(latitude)),
+        lon=degrees_to_nmea(abs(longitude)),
+        lat_dir=lat_direction,
+        lon_dir=lon_direction,
+        time=t)
+    return nmea_line(line)
+
 
 def gll(latitude, longitude, utc_datetime):
     '''
