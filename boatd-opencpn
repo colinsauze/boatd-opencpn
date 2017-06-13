@@ -27,7 +27,7 @@ def nmea_line(line):
 def degrees_to_nmea(input_degrees):
     degrees = math.trunc(input_degrees)
     minutes = (input_degrees - degrees) * 60
-    return '{}{:f}'.format(degrees, abs(minutes))
+    return '{}{:.4f}'.format(degrees, abs(minutes))
 
 
 def hdm(heading):
