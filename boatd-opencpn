@@ -9,6 +9,44 @@ import argparse
 
 import boatdclient
 
+def get_distance(lat1, lon1, lat2, lon2):
+    '''
+    Calculate the distance between lat1/lon1 and lat2/lon2 in metres
+    Expects coordinates in degrees
+    Returns distance in metres
+    '''
+    radius = 6371  #earth radius in km
+
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2) * math.sin(dlat / 2) +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(dlon / 2) * math.sin(dlon / 2))
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    d = radius * c
+
+    return d * 1000.0
+
+def get_heading(lat1, lon1, lat2, lon2):
+    '''
+    Calculate the distance between lat1/lon1 and lat2/lon2 in degrees
+    Expects coordinates in degrees
+    '''    
+    lat1 = math.radians(lat1)
+    lon1 = math.radians(lon1)
+    lat2 = math.radians(lat2)
+    lon2 = math.radians(lon2)    
+
+    heading = math.degrees(math.atan2(math.sin(lon2-lon1)*math.cos(lat2), 
+                                      math.cos(lat1)*math.sin(lat2)-
+                                      math.sin(lat1)*math.cos(lat2)*
+                                      math.cos(lon2-lon1)))
+
+    #make headings between 0 and 360 not -180 and +180
+    if(heading<0):
+        heading = heading + 360
+
+    return heading
 
 def calculate_checksum(line):
     '''Return the NMEA checksum for a given line'''
@@ -39,9 +77,9 @@ def degrees_to_nmea(input_degrees,places=3):
         return '{}{:07.4f}'.format(degrees, abs(minutes))
 
 
-def hdm(heading):
-    '''Return a HDM nmea sentance from a given heading'''
-    line = 'HCHDT,{0:.3},T'.format(heading)
+def hdc(heading):
+    '''Return a HDC nmea sentance from a given heading'''
+    line = 'HCHDT,{0:05.1f},T'.format(heading)
     return nmea_line(line)
 
 def gga(latitude, longitude, utc_datetime):
@@ -77,6 +115,32 @@ def gll(latitude, longitude, utc_datetime):
         time=t)
     return nmea_line(line)
 
+def vtg(old_latitude, old_longitude, latitude, longitude, old_utc_datetime, utc_datetime):
+    '''
+    return a VTG message with speed and track made good
+    '''
+    tmg = get_heading(old_latitude,old_longitude,latitude,longitude)
+    #distance in metres
+    distance = get_distance(old_latitude,old_longitude,latitude,longitude)
+
+    #time in seconds
+    time_diff = float(utc_datetime) - float(old_utc_datetime)
+
+    #speed in metres/sec
+    speed_ms = distance / time_diff
+    #print("speed in m/s",speed_ms)
+    speed_kts = speed_ms * 1.94384
+    speed_kph = speed_ms * 3.6
+
+    lat_direction = 'N' if latitude > 0 else 'S'  # noqa
+    lon_direction = 'E' if longitude > 0 else 'W'  # noqa
+    line = 'GPVTG,{:05.1f},T,{:05.1f},M,{:05.1f},N,{:05.1f},K'.format(
+        tmg, tmg, speed_kts, speed_kph)
+    print(line)
+
+    return nmea_line(line)
+
+
 
 def mwv(wind_angle, wind_speed, wind_speed_units='M', reference='T'):
     '''
@@ -85,7 +149,11 @@ def mwv(wind_angle, wind_speed, wind_speed_units='M', reference='T'):
     wind_speed_units can be one of K/M/N,
     reference can be 'R' = Relative, 'T' = True.
     '''
-    line = 'MWV,{0:.3g},{reference},{speed},{speed_units},A'.format(
+    #ensure we're always under 360
+    if wind_angle >= 360.0:
+        wind_angle = wind_angle - 360.0
+      
+    line = 'IIMWV,{0:05.1f},{1},{2:06.2f},{speed_units},A'.format(
         wind_angle,
         reference=reference,
         speed=wind_speed,
@@ -111,6 +179,13 @@ def main(bind_ip, bind_port, boatd_host, boatd_port, delay):
     boatd = boatdclient.Boatd(boatd_host, boatd_port)
     boat = boatdclient.Boat(boatd=boatd, auto_update=False)
 
+    boat.update()
+    #get initial readings for the position and time
+    location = boat.position
+    old_lat = location.lat
+    old_lon = location.long
+    old_time = time.time()  
+    
     while True :
         try:
             boat.update()
@@ -121,11 +196,17 @@ def main(bind_ip, bind_port, boatd_host, boatd_port, delay):
                 gga(location.lat,
                     location.long,
                     datetime.datetime.now()),
-                hdm(float(boat.heading)),
+                hdc(float(boat.heading)),
                 mwv(float(boat.wind.absolute), reference='T', wind_speed=1),
                 mwv(float(boat.wind.apparent), reference='R', wind_speed=1),
-                rsa(float(boat.target_rudder_angle)),
+                vtg(old_lat,old_lon,location.lat,location.long,old_time,
+                    time.time()),
+                #rsa(float(boat.target_rudder_angle)),
             ]
+            #save current positions for the next calculation of vmg/cmg
+            old_lat = location.lat
+            old_lon = location.long
+            old_time = time.time()
 
             for m in messages:
                 send_nmea_message(sock, m, (bind_ip, bind_port))
@@ -146,4 +227,4 @@ if __name__ == '__main__':
 
     main(bind_ip='127.0.0.1', bind_port=10110,
          boatd_host=host, boatd_port=port,
-         delay=0.2)
+         delay=1)
