@@ -36,7 +36,7 @@ def degrees_to_nmea(input_degrees):
 
 def hdc(heading):
     '''Return a HDC nmea sentance from a given heading'''
-    line = 'HCHDT,{0:.3},T'.format(heading)
+    line = 'HCHDT,{0:05.1f},T'.format(heading)
     return nmea_line(line)
 
 def gga(latitude, longitude, utc_datetime):
