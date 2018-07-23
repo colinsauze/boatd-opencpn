@@ -80,7 +80,11 @@ def mwv(wind_angle, wind_speed, wind_speed_units='M', reference='T'):
     wind_speed_units can be one of K/M/N,
     reference can be 'R' = Relative, 'T' = True.
     '''
-    line = 'MWV,{0:.3g},{reference},{speed},{speed_units},A'.format(
+    #ensure we're always under 360
+    if wind_angle >= 360.0:
+        wind_angle = wind_angle - 360.0
+      
+    line = 'IIMWV,{0:05.1f},{1},{2:06.2f},{speed_units},A'.format(
         wind_angle,
         reference=reference,
         speed=wind_speed,
