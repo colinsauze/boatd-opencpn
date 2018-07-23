@@ -196,7 +196,7 @@ def main(bind_ip, bind_port, boatd_host, boatd_port, delay):
                 mwv(float(boat.wind.apparent), reference='R', wind_speed=1),
                 vtg(old_lat,old_lon,location.lat,location.long,old_time,
                     time.time()),
-                rsa(float(boat.target_rudder_angle)),
+                #rsa(float(boat.target_rudder_angle)),
             ]
             #save current positions for the next calculation of vmg/cmg
             old_lat = location.lat
@@ -222,4 +222,4 @@ if __name__ == '__main__':
 
     main(bind_ip='127.0.0.1', bind_port=10110,
          boatd_host=host, boatd_port=port,
-         delay=0.2)
+         delay=1)
