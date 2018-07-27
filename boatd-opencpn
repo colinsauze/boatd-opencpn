@@ -152,11 +152,11 @@ def mwv(wind_angle, wind_speed, wind_speed_units='M', reference='T'):
     #ensure we're always under 360
     if wind_angle >= 360.0:
         wind_angle = wind_angle - 360.0
-      
+
     line = 'IIMWV,{0:05.1f},{1},{2:06.2f},{speed_units},A'.format(
         wind_angle,
-        reference=reference,
-        speed=wind_speed,
+        reference,
+        wind_speed,
         speed_units=wind_speed_units,
     )
     return nmea_line(line)
@@ -168,6 +168,7 @@ def rsa(rudder_angle):
 
 
 def send_nmea_message(sock, message, dest):
+    print(message)
     message = message + u"\r\n"
     sock.sendto(message.encode("utf-8"), dest)
 
@@ -185,13 +186,12 @@ def main(bind_ip, bind_port, boatd_host, boatd_port, delay):
     old_lat = location.lat
     old_lon = location.long
     old_time = time.time()  
-    
+
     while True :
         try:
             boat.update()
 
             location = boat.position
-
             messages = [
                 gga(location.lat,
                     location.long,
@@ -199,8 +199,7 @@ def main(bind_ip, bind_port, boatd_host, boatd_port, delay):
                 hdc(float(boat.heading)),
                 mwv(float(boat.wind.absolute), reference='T', wind_speed=1),
                 mwv(float(boat.wind.apparent), reference='R', wind_speed=1),
-                vtg(old_lat,old_lon,location.lat,location.long,old_time,
-                    time.time()),
+                vtg(old_lat,old_lon,location.lat,location.long,old_time,time.time()),
                 #rsa(float(boat.target_rudder_angle)),
             ]
             #save current positions for the next calculation of vmg/cmg
