@@ -222,8 +222,11 @@ def main(bind_ip, bind_port, boatd_host, boatd_port, delay):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("endpoint", help="boatd API endpoint")
-    host, port = parser.parse_args().endpoint.split(':')
+    parser.add_argument("port", help="UDP port to output NMEA data on",default=10110)
 
-    main(bind_ip='127.0.0.1', bind_port=10110,
+    host, port = parser.parse_args().endpoint.split(':')
+    bind_port = int(parser.parse_args().port)
+
+    main(bind_ip='127.0.0.1', bind_port=bind_port,
          boatd_host=host, boatd_port=port,
          delay=1)
