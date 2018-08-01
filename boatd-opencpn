@@ -161,9 +161,20 @@ def mwv(wind_angle, wind_speed, wind_speed_units='M', reference='T'):
     )
     return nmea_line(line)
 
+def wpl(latitude,longitude,name):
+    lat_direction = 'N' if latitude > 0 else 'S'  # noqa
+    lon_direction = 'E' if longitude > 0 else 'W'  # noqa
+    line = 'GPWPL,{lat},{lat_dir},{lon},{lon_dir},{name}'.format(
+        lat=degrees_to_nmea(abs(latitude),2),
+        lon=degrees_to_nmea(abs(longitude),3),
+        lat_dir=lat_direction,
+        lon_dir=lon_direction,
+        name=name)
+
+    return nmea_line(line)
 
 def rsa(rudder_angle):
-    line = 'RSA,{0:.3g},A,0.0,X'.format(rudder_angle)
+    line = 'RSA,{0:05.1f},A,0.0,X'.format(rudder_angle)
     return nmea_line(line)
 
 
@@ -192,6 +203,8 @@ def main(bind_ip, bind_port, boatd_host, boatd_port, delay):
             boat.update()
 
             location = boat.position
+	    waypoints = boatdclient.get_current_waypoints()
+
             messages = [
                 gga(location.lat,
                     location.long,
@@ -202,6 +215,16 @@ def main(bind_ip, bind_port, boatd_host, boatd_port, delay):
                 vtg(old_lat,old_lon,location.lat,location.long,old_time,time.time()),
                 #rsa(float(boat.target_rudder_angle)),
             ]
+	    print("target_rudder_angle=",type(boat.target_rudder_angle))
+
+	    #send waypoints
+	    #to view, turn on "Treat WPL sentences as APRS position reports"
+	    #under Options, Ships, AIS Targets, Display
+	    c=0
+	    for wp in waypoints:
+		messages.append(wpl(wp[0],wp[1],c))
+		c=c+1
+
             #save current positions for the next calculation of vmg/cmg
             old_lat = location.lat
             old_lon = location.long
